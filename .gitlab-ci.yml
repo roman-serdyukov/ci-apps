@@ -1,0 +1,31 @@
+---
+image: serdyukoff/ansible-ubuntu-20.04:1.0.2
+
+stages:
+  - check
+  - deploy
+
+before_script:
+  - ansible --version
+  - ansible-lint --version
+  - touch id_rsa.netology
+  - echo "$SSHKEY" > id_rsa.netology
+  - chmod 400 id_rsa.netology
+  - export ANSIBLE_HOST_KEY_CHECKING=False
+ 
+Check_code:
+  stage: check
+  script:
+  - ansible-lint -v site.yml
+  - ansible-playbook --inventory $PROD_YML --syntax-check site.yml
+  except: 
+    - main
+
+Deploy_app:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - ansible-playbook -i $PROD_YML site.yml -u ubuntu --private-key id_rsa.netology -vvv
+  only:
+    - tag && main

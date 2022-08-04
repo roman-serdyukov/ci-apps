@@ -1,0 +1,49 @@
+---
+
+- name: Deploy updates
+  hosts: pipeline
+
+  tasks:
+  - name: For www server
+    block:
+
+    - name: Apps |  Copy files Wordpress
+      become: true
+      ansible.builtin.copy:
+        src: wordpress.tar.xz
+        dest: /tmp/wordpress.tar.xz
+        mode: "0755"
+        
+    - name: Apps | Extract on /tmp
+      become: true
+      ansible.builtin.unarchive:
+        src: /tmp/wordpress.tar.xz
+        dest: /tmp
+        owner: www-data
+        group: www-data
+        mode: "0755"
+        copy: no
+
+    - name: Apps | Remove old www root
+      become: true
+      ansible.builtin.command: rm -R /var/www/www.reserdukov.ru/wordpress
+
+    - name: Apps | move in www root
+      become: true
+      ansible.builtin.command: mv /tmp/wordpress /var/www/www.reserdukov.ru
+    when: ansible_nodename == "www"
+
+  - name: For db server
+    block:
+    - name: DB | copy wordpress_dump
+      ansible.builtin.copy:
+        src: wordpress_dump.sql
+        dest: /home/{{ ansible_user }}/wordpress_dump.sql
+
+    - name: DB | Restore database
+      become: true
+      community.mysql.mysql_db:
+        name: wordpress
+        state: import
+        target: /home/{{ ansible_user }}/wordpress_dump.sql
+    when: ansible_nodename == "db1"
