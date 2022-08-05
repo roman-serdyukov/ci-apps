@@ -15,17 +15,22 @@ before_script:
  
 Check_code:
   stage: check
+  tags:
+    - deploy
   script:
   - ansible-lint -v site.yml
   - ansible-playbook --inventory $PROD_YML --syntax-check site.yml
   except: 
     - main
+    - tags
 
 Deploy_app:
   stage: deploy
   tags:
     - deploy
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - ansible-playbook -i $PROD_YML site.yml -u ubuntu --private-key id_rsa.netology -vvv
   only:
-    - tag && main
+    - tags
