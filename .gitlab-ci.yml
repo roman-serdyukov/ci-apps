@@ -2,7 +2,6 @@
 image: serdyukoff/ansible-ubuntu-20.04:1.0.2
 
 stages:
-  - check
   - deploy
 
 before_script:
@@ -13,21 +12,10 @@ before_script:
   - chmod 400 id_rsa.netology
   - export ANSIBLE_HOST_KEY_CHECKING=False
  
-Check_code:
-  stage: check
-  script:
-  - ansible-lint -v site.yml
-  - ansible-playbook --inventory $PROD_YML --syntax-check site.yml
-  except: 
-    - main
-    - tags
-
 Deploy_app:
   stage: deploy
   tags:
     - deploy
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - ansible-playbook -i $PROD_YML site.yml -u ubuntu --private-key id_rsa.netology -vvv
   only:
